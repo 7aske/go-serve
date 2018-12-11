@@ -8,7 +8,7 @@ import (
 
 func main() {
 	http.HandleFunc("/", handler)
-
+	createDirIfNotExist("uploads")
 	fmt.Println("Server started on port 80.")
 	http.ListenAndServe(":80", nil)
 }
@@ -55,6 +55,12 @@ func saveFile(filename string, text string) {
 	if err != nil {
 		return
 	}
-
-
+}
+func createDirIfNotExist(dir string) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
 }

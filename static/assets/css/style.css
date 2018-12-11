@@ -1,0 +1,16 @@
+* {
+    font-family: "Ubuntu Medium";
+}
+body, html {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+h1,h3 {
+    text-align: center;
+}
+input, textarea {
+    padding: 5px;
+    margin: 5px;
+    width: 300px;
+}

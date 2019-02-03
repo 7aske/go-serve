@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type GetHandler struct {
@@ -20,12 +22,15 @@ type GetHandler struct {
 
 func NewHandler(root string, index bool, cors bool, silent bool) *GetHandler {
 	wd := ""
-	if !path.IsAbs(root){
+	if !path.IsAbs(root) {
 		wd, _ = os.Getwd()
+		root = strings.Replace(root, "/", string(filepath.Separator), -1)
 		wd = path.Join(wd, root)
 	} else {
 		wd = root
 	}
+	wd = strings.Replace(wd, "/", string(filepath.Separator), -1)
+	fmt.Println("path: " + wd)
 	if _, err := os.Stat(wd); err != nil {
 		log.Fatal("path: invalid source path")
 	}
@@ -39,14 +44,16 @@ func (h *GetHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		if h.Cors {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
+		p := r.URL.String()
+		p = strings.Replace(p, "/", string(filepath.Separator), -1)
 		absP := ""
-		if path.IsAbs(h.Root) {
+		if p == "/" || p == "\\" {
+			fmt.Println(p)
 			absP = h.Root
 		} else {
-			wd, _ := os.Getwd()
-			wd = path.Join(wd, h.Root)
-			absP = path.Join(wd, r.URL.String())
+			absP = path.Join(h.Root, p)
 		}
+		fmt.Println(absP)
 		if fi, err := os.Stat(absP); err == nil && fi.IsDir() {
 			if dir, err := ioutil.ReadDir(absP); err == nil {
 				if util.ContainsFile("index.html", &dir) && h.Index {

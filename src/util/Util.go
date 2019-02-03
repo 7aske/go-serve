@@ -20,8 +20,7 @@ func GenerateHTML(flist *[]os.FileInfo, rel string) []byte {
 		"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
 		"<meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n" +
 		"<title></title>\n" +
-		"</head>\n" +
-		"<table>"
+		"</head>\n"
 	lower :=
 		"<body>\n" +
 		"</body>\n" +
@@ -31,7 +30,7 @@ func GenerateHTML(flist *[]os.FileInfo, rel string) []byte {
 	for _, f := range sortDir(flist) {
 		upper += "<tr>"
 		if f.IsDir() {
-			upper += fmt.Sprintf("<td><a style=\"color:black;\" href=\"%s/\">&#128193;%s/</a></td><td style=\"text-align:center\">DIR</td>", rel + f.Name() + "/",f.Name())
+			upper += fmt.Sprintf("<td><a style=\"color:black;\" href=\"%s/\">&#128193;%s/</a></td><td style=\"text-align:center\">DIR</td>", rel + f.Name(),f.Name())
 		} else {
 			upper += fmt.Sprintf("<td><a style=\"color:blue;\" href=\"%s\">&#128462;%s</a></td><td style=\"text-align:center\">%s</td>", rel + f.Name(), f.Name(), byteCountBinary(f.Size()))
 		}

@@ -3,3 +3,4 @@ uploads/*
 *.exe
 static/*
 out
+static

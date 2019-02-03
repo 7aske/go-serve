@@ -1,6 +1,4 @@
 .idea
-uploads/*
-*.exe
-static/*
 out
 static
+*.ini

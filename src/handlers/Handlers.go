@@ -59,7 +59,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 		if !h.Silent {
-			fmt.Println(r.Method, r.URL.String(), r.Host)
+			fmt.Println(r.Host + "\t", r.URL.String())
 		}
 		if h.Auth {
 			if token, err := r.Cookie("Authorization"); err != nil {
@@ -70,7 +70,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 				tokenString := strings.Split(token.Value, "Bearer ")[1]
 				if _, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-						return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+						return nil, fmt.Errorf("jwt: unexpected signing method %v", token.Header["alg"])
 					}
 					return secret, nil
 				}); err != nil {
@@ -106,7 +106,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				fmt.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
-				if _, err := fmt.Fprint(w, "Internal Server Error"); err != nil {
+				if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
 					fmt.Println(err)
 				}
 			}

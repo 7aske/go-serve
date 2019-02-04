@@ -37,7 +37,9 @@ func GenerateHTML(flist *[]os.FileInfo, rel string) []byte {
 		*{font-family:Ubuntu,Calibri}
 		a{text-decoration:none;font-size:20px;}
 		a:hover{color:red!important;}
-		td{width:300px;overflow:hidden;}
+		tr:hover td {color:red!important;}
+		td{width:500px;overflow:hidden;}
+		td+td{width:200px;}
 		</style>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">

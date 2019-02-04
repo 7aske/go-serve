@@ -52,9 +52,13 @@ func main() {
 	}
 	handler := handlers.NewHandler(root, index, cors, silent, auth)
 	if handler.Auth {
-		http.HandleFunc("/auth", handler.HandleAuth)
+		http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
+			handler.HandleAuth(w, r)
+		})
 	}
-	http.HandleFunc("/", handler.Handle)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		handler.Handle(w, r)
+	})
 	fmt.Println("Starting server on port" + port)
 	err := http.ListenAndServe(port, nil)
 	if err != nil {

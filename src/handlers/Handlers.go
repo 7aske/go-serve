@@ -59,7 +59,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 		if !h.Silent {
-			fmt.Println(r.Host + "\t", r.URL.String())
+			fmt.Println(r.Host+"\t", r.URL.String())
 		}
 		if h.Auth {
 			if token, err := r.Cookie("Authorization"); err != nil {
@@ -110,7 +110,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 					fmt.Println(err)
 				}
 			}
-		} else if err == nil {
+		} else if err == nil && path.Base(absP) != "server.ini" {
 			http.ServeFile(w, r, absP)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
@@ -123,6 +123,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 501 NOT IMPLEMENTED"); err != nil {
 			fmt.Println(err)
 		}
+
 	}
 
 }
@@ -142,9 +143,7 @@ func (h *Handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 				}
 			} else {
 				ps := r.Form.Get("password")
-				h := sha256.New()
-				h.Write([]byte(ps))
-				psh := hex.EncodeToString(h.Sum(nil))
+				psh := getHash(ps)
 				if psh == password {
 					expires := time.Now().Unix() + int64(24*time.Hour)
 					token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{ExpiresAt: expires, Issuer: "server"})
@@ -172,30 +171,31 @@ func SetPassword(p string) {
 func SetSecret(s string) {
 	secret = []byte(s)
 }
+
+func getHash(str string) string {
+	h := sha256.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func updateAuthParams() {
 	if util.Contains("-pw", &os.Args) != -1 {
 		if arg, ok := util.ParseArgs("-pw"); !ok {
 			util.PrintHelp()
 			os.Exit(0)
 		} else {
-			h := sha256.New()
-			h.Write([]byte(arg))
-			password = hex.EncodeToString(h.Sum(nil))
+			password = getHash(arg)
 		}
-	} else if i, err := ini.Load("server.ini"); err != nil {
+	} else if i, err := ini.Load("server.ini"); err == nil {
 		pw := i.Section("auth").Key("password").String()
-		h := sha256.New()
-		h.Write([]byte(pw))
-		password = hex.EncodeToString(h.Sum(nil))
+		password = getHash(pw)
 		if util.Contains("-s", &os.Args) == -1 {
 			secret = []byte(i.Section("auth").Key("secret").String())
 		}
 	} else {
-		h := sha256.New()
-		h.Write([]byte(password))
-		password = hex.EncodeToString(h.Sum(nil))
+		password = getHash(password)
 		fmt.Println("auth: no -pw option or server.ini file")
-		fmt.Println("auth: default password 'admin'")
+		fmt.Println("auth: default password is 'admin'")
 	}
 	if util.Contains("-s", &os.Args) != -1 {
 		if arg, ok := util.ParseArgs("-s"); !ok {

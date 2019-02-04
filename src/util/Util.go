@@ -47,7 +47,7 @@ func GenerateHTML(flist *[]os.FileInfo, rel string) []byte {
 		<title></title>
 		</head>`
 	upper += fmt.Sprintf(`<a style="font-size:24px;color:black;" href="/">%s</a><hr>`, rel)
-	lower :=`<body></body></html>`
+	lower := `<body></body></html>`
 	back := fmt.Sprintf(`<a style="text-decoration:underline;color:black;" href="%s">&larr;%s</a><br><br><table><tr><th style="text-align:left;">Filename</th><th>Size</th></tr>`, filepath.Dir(filepath.Dir(rel)), "Back")
 	upper += back
 	for _, f := range sortDir(flist) {
@@ -55,7 +55,9 @@ func GenerateHTML(flist *[]os.FileInfo, rel string) []byte {
 		if f.IsDir() {
 			upper += fmt.Sprintf(`<td><a style="color:black;" href="%s/">&#128193;%s/</a></td><td style="text-align:center">DIR</td>`, rel+f.Name(), f.Name())
 		} else {
-			upper += fmt.Sprintf(`<td><a style="color:blue;" href="%s">&#128462;%s</a></td><td style="text-align:center">%s</td>`, rel+f.Name(), f.Name(), byteCountBinary(f.Size()))
+			if f.Name() != "server.ini" {
+				upper += fmt.Sprintf(`<td><a style="color:blue;" href="%s">&#128462;%s</a></td><td style="text-align:center">%s</td>`, rel+f.Name(), f.Name(), byteCountBinary(f.Size()))
+			}
 		}
 		upper += "</tr>"
 	}

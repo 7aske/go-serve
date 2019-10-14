@@ -75,7 +75,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 					return secret, nil
 				}); err != nil {
 					fmt.Println(err)
-					http.Redirect(w, r, "/auth", 301)
+					http.Redirect(w, r, "/auth", 307)
 					return
 				}
 

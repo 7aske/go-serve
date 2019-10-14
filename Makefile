@@ -1,5 +1,5 @@
 OUT=out
-NAME=httpserver
+NAME=goserve
 MAIN=src/Main.go
 FLAGS=-a -v -ldflags '-w -extldflags "-static"'
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"./handlers"
+	"./livereload"
 	"./util"
 	"fmt"
 	"log"
@@ -56,10 +57,13 @@ func main() {
 			handler.HandleAuth(w, r)
 		})
 	}
+	go func() {
+		livereload.Test()
+	}()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		handler.Handle(w, r)
 	})
-	fmt.Println("Starting server on port" + port)
+	fmt.Println("Starting server on port " + port)
 	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		log.Fatal(err)

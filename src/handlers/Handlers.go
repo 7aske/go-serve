@@ -93,8 +93,21 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		if fi, err := os.Stat(absP); err == nil && fi.IsDir() {
 			if dir, err := ioutil.ReadDir(absP); err == nil {
 				if util.ContainsFile("index.html", &dir) && h.Index {
+					page, err := util.InjectLiveReload(absP + "/" + "index.html")
+					if err != nil {
+						fmt.Println(err)
+						w.WriteHeader(http.StatusInternalServerError)
+						if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
+							fmt.Println(err)
+						}
+					}
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
-					http.ServeFile(w, r, path.Join(absP, "index.html"))
+					w.Header().Set("Content-Length", strconv.Itoa(len(page)))
+					if _, err := w.Write(page); err != nil {
+						fmt.Println(err)
+					}
+					//w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					//http.ServeFile(w, r, path.Join(absP, "index.html"))
 				} else {
 					page := util.GenerateHTML(&dir, r.URL.String())
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -110,8 +123,24 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 					fmt.Println(err)
 				}
 			}
-		} else if err == nil && path.Base(absP) != "server.ini" {
-			http.ServeFile(w, r, absP)
+		} else if err == nil {
+			if strings.HasSuffix(strings.ToLower(fi.Name()), ".html") {
+				page, err := util.InjectLiveReload(absP + "/" + fi.Name())
+				if err != nil {
+					fmt.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
+						fmt.Println(err)
+					}
+				}
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.Header().Set("Content-Length", strconv.Itoa(len(page)))
+				if _, err := w.Write(page); err != nil {
+					fmt.Println(err)
+				}
+			} else {
+				http.ServeFile(w, r, absP)
+			}
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 			if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 404 NOT FOUND"); err != nil {

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"../livereload"
 	"../util"
 	"crypto/sha256"
 	"encoding/hex"
@@ -19,18 +20,19 @@ import (
 )
 
 type Handler struct {
-	Root   string
-	Index  bool
-	Cors   bool
-	Silent bool
-	Auth   bool
+	Root       string
+	Index      bool
+	Cors       bool
+	Silent     bool
+	Auth       bool
+	LiveReload bool
 }
 
 //default values
 var password = "admin"
 var secret = []byte("d3c9e23120f8849f9e7f8132fbe5400757440493ae11789bfeacc5eabba33e95")
 
-func NewHandler(root string, index bool, cors bool, silent bool, auth bool) *Handler {
+func NewHandler(root string, index bool, cors bool, silent bool, auth bool, reload bool) *Handler {
 	// update path
 	wd := ""
 	if !path.IsAbs(root) {
@@ -51,7 +53,7 @@ func NewHandler(root string, index bool, cors bool, silent bool, auth bool) *Han
 		updateAuthParams()
 	}
 	// end parse auth data
-	return &Handler{wd, index, cors, silent, auth}
+	return &Handler{wd, index, cors, silent, auth, reload}
 }
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -93,21 +95,24 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		if fi, err := os.Stat(absP); err == nil && fi.IsDir() {
 			if dir, err := ioutil.ReadDir(absP); err == nil {
 				if util.ContainsFile("index.html", &dir) && h.Index {
-					page, err := util.InjectLiveReload(absP + "/" + "index.html")
-					if err != nil {
-						fmt.Println(err)
-						w.WriteHeader(http.StatusInternalServerError)
-						if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
+					if h.LiveReload {
+						page, err := livereload.InjectLiveReload(absP + "/" + "index.html")
+						if err != nil {
+							fmt.Println(err)
+							w.WriteHeader(http.StatusInternalServerError)
+							if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
+								fmt.Println(err)
+							}
+						}
+						w.Header().Set("Content-Type", "text/html; charset=utf-8")
+						w.Header().Set("Content-Length", strconv.Itoa(len(page)))
+						if _, err := w.Write(page); err != nil {
 							fmt.Println(err)
 						}
+					} else {
+						w.Header().Set("Content-Type", "text/html; charset=utf-8")
+						http.ServeFile(w, r, path.Join(absP, "index.html"))
 					}
-					w.Header().Set("Content-Type", "text/html; charset=utf-8")
-					w.Header().Set("Content-Length", strconv.Itoa(len(page)))
-					if _, err := w.Write(page); err != nil {
-						fmt.Println(err)
-					}
-					//w.Header().Set("Content-Type", "text/html; charset=utf-8")
-					//http.ServeFile(w, r, path.Join(absP, "index.html"))
 				} else {
 					page := util.GenerateHTML(&dir, r.URL.String())
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -125,18 +130,22 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			}
 		} else if err == nil {
 			if strings.HasSuffix(strings.ToLower(fi.Name()), ".html") {
-				page, err := util.InjectLiveReload(absP + "/" + fi.Name())
-				if err != nil {
-					fmt.Println(err)
-					w.WriteHeader(http.StatusInternalServerError)
-					if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
+				if h.LiveReload {
+					page, err := livereload.InjectLiveReload(absP + "/" + fi.Name())
+					if err != nil {
 						fmt.Println(err)
+						w.WriteHeader(http.StatusInternalServerError)
+						if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
+							fmt.Println(err)
+						}
 					}
-				}
-				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				w.Header().Set("Content-Length", strconv.Itoa(len(page)))
-				if _, err := w.Write(page); err != nil {
-					fmt.Println(err)
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.Header().Set("Content-Length", strconv.Itoa(len(page)))
+					if _, err := w.Write(page); err != nil {
+						fmt.Println(err)
+					} else {
+						http.ServeFile(w, r, absP)
+					}
 				}
 			} else {
 				http.ServeFile(w, r, absP)

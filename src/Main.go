@@ -18,6 +18,7 @@ func main() {
 	cors := false
 	silent := false
 	auth := false
+	reload := false
 
 	if util.Contains("--help", &os.Args) != -1 || util.Contains("-h", &os.Args) != -1 || util.Contains("-help", &os.Args) != -1 || util.Contains("help", &os.Args) != -1 {
 		util.PrintHelp()
@@ -40,6 +41,9 @@ func main() {
 		}
 	}
 	if util.Contains("--index", &os.Args) != -1 {
+		if util.Contains("--reload", &os.Args) != -1 {
+			reload = true
+		}
 		index = true
 	}
 	if util.Contains("--silent", &os.Args) != -1 {
@@ -51,15 +55,13 @@ func main() {
 	if util.Contains("--auth", &os.Args) != -1 {
 		auth = true
 	}
-	handler := handlers.NewHandler(root, index, cors, silent, auth)
+	handler := handlers.NewHandler(root, index, cors, silent, auth, reload)
 	if handler.Auth {
 		http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
 			handler.HandleAuth(w, r)
 		})
 	}
-	go func() {
-		livereload.Test()
-	}()
+	go livereload.ListenAndServe()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		handler.Handle(w, r)
 	})

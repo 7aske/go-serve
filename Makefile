@@ -11,6 +11,7 @@ install:
 dep:
 	go get github.com/dgrijalva/jwt-go
 	go get github.com/go-ini/ini
+	go get github.com/gorilla/websocket
 
 build: $(MAIN)	
 	mkdir -p $(OUT)

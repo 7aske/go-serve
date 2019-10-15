@@ -1,9 +1,7 @@
 package util
 
 import (
-	"bufio"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -136,20 +134,4 @@ func PrintHelp() {
 	fmt.Println("--auth          enables authentication")
 }
 
-func InjectLiveReload(pth string) ([]byte, error) {
-	file, err := os.Open(pth)
-	if err != nil {
-		return []byte{}, err
-	}
-	reader := bufio.NewReader(file)
-	fileContents, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return []byte{}, err
-	}
-	return appendScript(fileContents), nil
-}
 
-func appendScript(buffer []byte) []byte {
-	var script = "<script>var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';var address = protocol + window.location.hostname + ':33900' + window.location.pathname + '/ws';var socket = new WebSocket(address);socket.onmessage = function (msg) {if (msg.data == 'reload') window.location.reload();};</script>"
-	return append(buffer, []byte(script)...)
-}

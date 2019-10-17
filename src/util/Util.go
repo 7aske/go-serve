@@ -129,6 +129,7 @@ func PrintHelp() {
 	fmt.Println("-s  <secret>    specify hash secret")
 	fmt.Println("                only works with --auth flag")
 	fmt.Println("--index         enable auto serve index.html")
+	fmt.Println("--reload        enable auto-reloading of html pages on fs changes")
 	fmt.Println("--cors          enable Cross-Origin headers")
 	fmt.Println("--silent        suppress logging")
 	fmt.Println("--auth          enables authentication")

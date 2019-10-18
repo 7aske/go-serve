@@ -1,13 +1,14 @@
 package main
 
 import (
-	"./handlers"
-	"./livereload"
-	"./util"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	"./handlers"
+	"./livereload"
+	"./util"
 )
 
 func main() {
@@ -42,6 +43,7 @@ func main() {
 	}
 	if util.Contains("--index", &os.Args) != -1 {
 		if util.Contains("--reload", &os.Args) != -1 {
+			go livereload.ListenAndServe()
 			reload = true
 		}
 		index = true
@@ -61,7 +63,6 @@ func main() {
 			handler.HandleAuth(w, r)
 		})
 	}
-	go livereload.ListenAndServe()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		handler.Handle(w, r)
 	})

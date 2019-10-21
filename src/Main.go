@@ -1,63 +1,86 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"./handlers"
 	"./livereload"
-	"./util"
 )
 
+func PrintHelp() {
+	_, _ = fmt.Fprintln(os.Stderr, "usage: goserve [dir] [...flags]")
+	_, _ = fmt.Fprintln(os.Stderr, "")
+	_, _ = fmt.Fprintln(os.Stderr, "--port, -p <port>       specify server port")
+	_, _ = fmt.Fprintln(os.Stderr, "--dir, -d <folder>      specify source folder")
+	_, _ = fmt.Fprintln(os.Stderr, "--index, -i             enable auto serve index.html")
+	_, _ = fmt.Fprintln(os.Stderr, "--reload, -r            enable auto-reloading of html pages on fs changes")
+	_, _ = fmt.Fprintln(os.Stderr, "--cors                  enable Cross-Origin headers")
+	_, _ = fmt.Fprintln(os.Stderr, "--silent, -s            suppress logging")
+	_, _ = fmt.Fprintln(os.Stderr, "--auth, -a              enables authentication")
+	_, _ = fmt.Fprintln(os.Stderr, "--password, -pw <pass>  specify auth password")
+	_, _ = fmt.Fprintln(os.Stderr, "example:")
+	_, _ = fmt.Fprintln(os.Stderr, "")
+	_, _ = fmt.Fprintln(os.Stderr, "goserve ./static --index --reload")
+}
+
 func main() {
-	port := ":8080"
-	root := "."
+	port := flag.String("port", "8080", "specify server port")
+	flag.StringVar(port, "p", *port, "specify server port")
 
-	index := false
-	cors := false
-	silent := false
-	auth := false
-	reload := false
+	dir := flag.String("dir", ".", "specify source folder")
+	flag.StringVar(dir, "d", *dir, "specify source folder")
 
-	if util.Contains("--help", &os.Args) != -1 || util.Contains("-h", &os.Args) != -1 || util.Contains("-help", &os.Args) != -1 || util.Contains("help", &os.Args) != -1 {
-		util.PrintHelp()
-		os.Exit(0)
+	auth := flag.Bool("auth", false, "enables authentication")
+	flag.BoolVar(auth, "a", *auth, "enables authentication")
+
+	cors := flag.Bool("cors", false, "enable Cross-Origin headers")
+
+	silent := flag.Bool("silent", false, "suppress logging")
+	flag.BoolVar(silent, "s", *silent, "suppress logging")
+
+	index := flag.Bool("index", false, "enable auto serve index.html")
+	flag.BoolVar(index, "i", *index, "enable auto serve index.html")
+
+	reload := flag.Bool("reload", false, "enable auto-reloading of html pages on fs changes")
+	flag.BoolVar(reload, "r", *reload, "enable auto-reloading of html pages on fs changes")
+
+	password := flag.String("password", "admin", "specify auth password")
+	flag.StringVar(password, "pw", *password, "specify auth password")
+
+	flag.Usage = func() {
+		PrintHelp()
 	}
-	if util.Contains("-p", &os.Args) != -1 {
-		if arg, ok := util.ParseArgs("-p"); !ok {
-			util.PrintHelp()
-			os.Exit(0)
-		} else {
-			port = ":" + arg
+	flag.Parse()
+	if len(flag.Args()) > 0 {
+		if flag.Arg(0) != *dir {
+			*dir = flag.Arg(0)
 		}
 	}
-	if util.Contains("-f", &os.Args) != -1 {
-		if arg, ok := util.ParseArgs("-f"); !ok {
-			util.PrintHelp()
-			os.Exit(0)
-		} else {
-			root = arg
-		}
+
+	if !strings.HasPrefix(*port, ":") {
+		*port = ":" + *port
 	}
-	if util.Contains("--index", &os.Args) != -1 {
-		if util.Contains("--reload", &os.Args) != -1 {
-			go livereload.ListenAndServe()
-			reload = true
-		}
-		index = true
+
+	if *index && *reload {
+		go livereload.ListenAndServe()
+	} else {
+		*reload = false
 	}
-	if util.Contains("--silent", &os.Args) != -1 {
-		silent = true
+	handlerOptions := handlers.HandlerOptions{
+		Root:       *dir,
+		Index:      *index,
+		Cors:       *cors,
+		Silent:     *silent,
+		Auth:       *auth,
+		LiveReload: *reload,
+		Password:   *password,
 	}
-	if util.Contains("--cors", &os.Args) != -1 {
-		cors = true
-	}
-	if util.Contains("--auth", &os.Args) != -1 {
-		auth = true
-	}
-	handler := handlers.NewHandler(root, index, cors, silent, auth, reload)
+	handler := handlers.NewHandler(&handlerOptions)
 	if handler.Auth {
 		http.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
 			handler.HandleAuth(w, r)
@@ -66,9 +89,6 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		handler.Handle(w, r)
 	})
-	fmt.Println("Starting server on port " + port)
-	err := http.ListenAndServe(port, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	fmt.Println("Starting server on port " + strings.TrimPrefix(*port, ":"))
+	log.Fatal(http.ListenAndServe(*port, nil))
 }

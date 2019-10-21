@@ -26,21 +26,29 @@ type Handler struct {
 	Silent     bool
 	Auth       bool
 	LiveReload bool
+	password   string
+	secret     []byte
 }
 
-//default values
-var password = "admin"
-var secret = []byte("d3c9e23120f8849f9e7f8132fbe5400757440493ae11789bfeacc5eabba33e95")
+type HandlerOptions struct {
+	Root       string
+	Index      bool
+	Cors       bool
+	Silent     bool
+	Auth       bool
+	LiveReload bool
+	Password   string
+}
 
-func NewHandler(root string, index bool, cors bool, silent bool, auth bool, reload bool) *Handler {
+func NewHandler(opt *HandlerOptions) *Handler {
 	// update path
 	wd := ""
-	if !path.IsAbs(root) {
+	if !path.IsAbs(opt.Root) {
 		wd, _ = os.Getwd()
-		root = strings.Replace(root, "/", string(filepath.Separator), -1)
-		wd = path.Join(wd, root)
+		opt.Root = strings.Replace(opt.Root, "/", string(filepath.Separator), -1)
+		wd = path.Join(wd, opt.Root)
 	} else {
-		wd = root
+		wd = opt.Root
 	}
 	wd = strings.Replace(wd, "/", string(filepath.Separator), -1)
 	fmt.Println("path: " + wd)
@@ -49,11 +57,19 @@ func NewHandler(root string, index bool, cors bool, silent bool, auth bool, relo
 	}
 	// end update path
 	// parse auth data
-	if auth {
-		updateAuthParams()
+	handler := &Handler{wd,
+		opt.Index,
+		opt.Cors,
+		opt.Silent,
+		opt.Auth,
+		opt.LiveReload,
+		opt.Password,
+		[]byte("d3c9e23120f8849f9e7f8132fbe5400757440493ae11789bfeacc5eabba33e95")}
+	if opt.Auth {
+		handler.updateAuthParams()
 	}
 	// end parse auth data
-	return &Handler{wd, index, cors, silent, auth, reload}
+	return handler
 }
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
@@ -74,7 +90,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("jwt: unexpected signing method %v", token.Header["alg"])
 					}
-					return secret, nil
+					return h.secret, nil
 				}); err != nil {
 					fmt.Println(err)
 					http.Redirect(w, r, "/auth", 307)
@@ -182,10 +198,10 @@ func (h *Handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 			} else {
 				ps := r.Form.Get("password")
 				psh := getHash(ps)
-				if psh == password {
+				if psh == h.password {
 					expires := time.Now().Unix() + int64(24*time.Hour)
 					token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{ExpiresAt: expires, Issuer: "server"})
-					tokenString, _ := token.SignedString([]byte(secret))
+					tokenString, _ := token.SignedString([]byte(h.secret))
 					cookie := http.Cookie{Name: "Authorization", Value: fmt.Sprintf("Bearer %s", tokenString), Path: "/", Expires: time.Now().Add(24 * time.Hour)}
 					http.SetCookie(w, &cookie)
 					http.Redirect(w, r, "/", 301)
@@ -201,14 +217,6 @@ func (h *Handler) HandleAuth(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
-func SetPassword(p string) {
-	hm := sha256.New()
-	hm.Write([]byte(p))
-	password = hex.EncodeToString(hm.Sum(nil))
-}
-func SetSecret(s string) {
-	secret = []byte(s)
-}
 
 func getHash(str string) string {
 	h := sha256.New()
@@ -216,31 +224,15 @@ func getHash(str string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func updateAuthParams() {
-	if util.Contains("-pw", &os.Args) != -1 {
-		if arg, ok := util.ParseArgs("-pw"); !ok {
-			util.PrintHelp()
-			os.Exit(0)
-		} else {
-			password = getHash(arg)
-		}
-	} else if i, err := ini.Load("server.ini"); err == nil {
+func (h *Handler) updateAuthParams() {
+	if i, err := ini.Load("server.ini"); err == nil {
 		pw := i.Section("auth").Key("password").String()
-		password = getHash(pw)
+		h.password = getHash(pw)
 		if util.Contains("-s", &os.Args) == -1 {
-			secret = []byte(i.Section("auth").Key("secret").String())
+			h.secret = []byte(i.Section("auth").Key("secret").String())
 		}
 	} else {
-		password = getHash(password)
-		fmt.Println("auth: no -pw option or server.ini file")
-		fmt.Println("auth: default password is 'admin'")
-	}
-	if util.Contains("-s", &os.Args) != -1 {
-		if arg, ok := util.ParseArgs("-s"); !ok {
-			util.PrintHelp()
-			os.Exit(0)
-		} else {
-			secret = []byte(arg)
-		}
+		fmt.Printf("auth: default password is '%s'\n", h.password)
+		h.password = getHash(h.password)
 	}
 }

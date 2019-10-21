@@ -119,20 +119,5 @@ func ContainsFile(q string, dir *[]os.FileInfo) bool {
 	}
 	return false
 }
-func PrintHelp() {
-	fmt.Println("usage: [...options] [...flags]")
-	fmt.Println()
-	fmt.Println("-p  <port>      specify server port")
-	fmt.Println("-f  <folder>    specify source folder")
-	fmt.Println("-pw <pass>      specify server password")
-	fmt.Println("                only works with --auth flag")
-	fmt.Println("-s  <secret>    specify hash secret")
-	fmt.Println("                only works with --auth flag")
-	fmt.Println("--index         enable auto serve index.html")
-	fmt.Println("--reload        enable auto-reloading of html pages on fs changes")
-	fmt.Println("--cors          enable Cross-Origin headers")
-	fmt.Println("--silent        suppress logging")
-	fmt.Println("--auth          enables authentication")
-}
 
 

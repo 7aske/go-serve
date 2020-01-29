@@ -3,6 +3,7 @@ package handlers
 import (
 	"../livereload"
 	"../util"
+	"../zip"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -100,7 +101,15 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		// AUTH GOOD
+		toDownload := false
 		p := r.URL.String()
+		if strings.HasSuffix(p, "/download/") {
+			toDownload = true
+			p = strings.Replace(p, "/download/", "", -1)
+		} else if strings.HasSuffix(p, "/download") {
+			toDownload = true
+			p = strings.Replace(p, "/download", "", -1)
+		}
 		p = strings.Replace(p, "/", string(filepath.Separator), -1)
 		absP := ""
 		if p == "/" || p == "\\" {
@@ -110,7 +119,19 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 		if fi, err := os.Stat(absP); err == nil && fi.IsDir() {
 			if dir, err := ioutil.ReadDir(absP); err == nil {
-				if util.ContainsFile("index.html", &dir) && h.Index {
+				if toDownload {
+					folder, err := zip.Folder(absP)
+					if err != nil {
+						fmt.Println(err)
+						w.WriteHeader(http.StatusInternalServerError)
+						if _, err := fmt.Fprint(w, "( ͠° ͟ʖ ͡°) 500 INTERNAL SERVER ERROR"); err != nil {
+							fmt.Println(err)
+						}
+						return
+					}
+					w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\";", path.Base(folder)))
+					http.ServeFile(w, r, folder)
+				} else if util.ContainsFile("index.html", &dir) && h.Index {
 					if h.LiveReload {
 						page, err := livereload.InjectLiveReload(absP + "/" + "index.html")
 						if err != nil {
@@ -145,6 +166,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else if err == nil {
+			// Requested URL is a file
 			if strings.HasSuffix(strings.ToLower(fi.Name()), ".html") {
 				if h.LiveReload {
 					page, err := livereload.InjectLiveReload(absP + "/" + fi.Name())

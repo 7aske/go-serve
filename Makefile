@@ -11,9 +11,7 @@ install: build
 	sudo cp ./$(OUT)/$(NAME) /usr/bin/
 
 dep:
-	[ -d $(GO_PATH)/src/github.com/dgrijalva/jwt-go ] || go get github.com/dgrijalva/jwt-go
-	[ -d $(GO_PATH)/src/github.com/go-ini/ini ] || go get github.com/go-ini/ini
-	[ -d $(GO_PATH)/src/github.com/gorilla/websocket ] || go get github.com/gorilla/websocket
+	go mod tidy
 
 run:
 	go run $(MAIN)

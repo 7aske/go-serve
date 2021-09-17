@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"./handlers"
-	"./livereload"
+	"github.com/7aske/go-serve/src/handlers"
+	"github.com/7aske/go-serve/src/livereload"
 )
 
 func PrintHelp() {

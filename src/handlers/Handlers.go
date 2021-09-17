@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"../livereload"
-	"../util"
-	"../zip"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/7aske/go-serve/src/livereload"
+	"github.com/7aske/go-serve/src/util"
+	"github.com/7aske/go-serve/src/zip"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-ini/ini"
 	"io/ioutil"
